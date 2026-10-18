@@ -59,6 +59,27 @@ final class PatientScope
     }
 
     /**
+     * Visibility of a resource shared across patients (a catalog medicine
+     * and its stock): allowed when it is linked to at least one allowed
+     * patient, or when it is not linked to any patient yet.
+     *
+     * @param list<int> $linkedPatientIds
+     */
+    public function allowsShared(array $linkedPatientIds): bool
+    {
+        if ($this->ids === null || $linkedPatientIds === []) {
+            return true;
+        }
+        foreach ($linkedPatientIds as $patientId) {
+            if ($this->allows($patientId)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * Keep only rows whose `$key` column is an allowed patient id.
      *
      * Rows without the key are dropped when restricted (fail closed).

@@ -161,7 +161,7 @@ final class PatientAccess
             return true;
         }
 
-        return self::medicineAllowed($scope, $this->links->patientIdsForMedicine($medicineId));
+        return $scope->allowsShared($this->links->patientIdsForMedicine($medicineId));
     }
 
     /**
@@ -185,7 +185,7 @@ final class PatientAccess
         return array_values(array_filter(
             $rows,
             static fn(array $row): bool => isset($row[$key]) && is_numeric($row[$key])
-                && self::medicineAllowed($scope, $map[(int) $row[$key]] ?? []),
+                && $scope->allowsShared($map[(int) $row[$key]] ?? []),
         ));
     }
 
@@ -201,22 +201,5 @@ final class PatientAccess
         $patientId = $resolve();
 
         return $patientId !== null && $scope->allows($patientId);
-    }
-
-    /**
-     * @param list<int> $linkedPatients
-     */
-    private static function medicineAllowed(PatientScope $scope, array $linkedPatients): bool
-    {
-        if ($linkedPatients === []) {
-            return true;
-        }
-        foreach ($linkedPatients as $patientId) {
-            if ($scope->allows($patientId)) {
-                return true;
-            }
-        }
-
-        return false;
     }
 }

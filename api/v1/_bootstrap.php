@@ -23,6 +23,8 @@ require_once __DIR__ . '/../../includes/dbi4php.php';
 
 use HomeCare\Api\ApiAuth;
 use HomeCare\Api\ApiResponse;
+use HomeCare\Auth\PatientAccess;
+use HomeCare\Auth\PatientScope;
 use HomeCare\Database\DbiAdapter;
 use HomeCare\RateLimit\ApiRateLimiter;
 use HomeCare\Repository\UserRepository;
@@ -103,4 +105,17 @@ function api_authenticate_or_exit(): array
     }
 
     return $result->user;
+}
+
+/**
+ * HC-237: the patients the authenticated API user may see. Admins and
+ * users with no patient assignments are unrestricted.
+ *
+ * @param array<string,mixed> $user As returned by api_authenticate_or_exit().
+ */
+function api_patient_scope(array $user): PatientScope
+{
+    $login = isset($user['login']) && is_string($user['login']) ? $user['login'] : '';
+
+    return PatientAccess::create(new DbiAdapter())->scopeFor($login);
 }

@@ -81,6 +81,16 @@ final class PatientScopeTest extends TestCase
         $this->assertSame([], $filtered);
     }
 
+    public function testAllowsSharedResource(): void
+    {
+        $scope = PatientScope::only([2]);
+
+        $this->assertTrue($scope->allowsShared([1, 2]), 'linked to an allowed patient');
+        $this->assertFalse($scope->allowsShared([1, 3]), 'only other patients');
+        $this->assertTrue($scope->allowsShared([]), 'not linked to anyone');
+        $this->assertTrue(PatientScope::unrestricted()->allowsShared([1]));
+    }
+
     public function testUnrestrictedFilterReturnsRowsUnchanged(): void
     {
         $rows = [['id' => 1], ['id' => 2]];
