@@ -238,6 +238,23 @@ function require_medicine_access($medicineId): void
 }
 
 /**
+ * Guard an hc_medicine_inventory row by its own medicine (not a posted
+ * medicine_id). Missing rows pass so the caller's not-found path runs.
+ *
+ * @param int|string|null $inventoryId
+ */
+function require_inventory_access($inventoryId): void
+{
+    $rows = dbi_get_cached_rows(
+        'SELECT medicine_id FROM hc_medicine_inventory WHERE id = ?',
+        [(int) $inventoryId]
+    );
+    if (!empty($rows)) {
+        require_medicine_access((int) $rows[0][0]);
+    }
+}
+
+/**
  * Guard catalog-wide operations that rewrite other patients' data (e.g.
  * merging medicines): only users who can see every patient may run them.
  */
