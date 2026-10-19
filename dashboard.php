@@ -223,8 +223,14 @@ $expectedSql = "SELECT ms.frequency
                    AND ms.is_prn = 'N'
                    AND ms.frequency IS NOT NULL
                    AND ms.start_date <= ?
-                   AND (ms.end_date IS NULL OR ms.end_date >= ?)";
-$expectedRows = dbi_get_cached_rows($expectedSql, [$todayDate, $todayDate]);
+                   AND (ms.end_date IS NULL OR ms.end_date >= ?)
+                   AND NOT EXISTS (
+                       SELECT 1 FROM hc_schedule_pauses sp
+                        WHERE sp.schedule_id = ms.id
+                          AND sp.start_date <= ?
+                          AND (sp.end_date IS NULL OR sp.end_date >= ?)
+                   )";
+$expectedRows = dbi_get_cached_rows($expectedSql, [$todayDate, $todayDate, $todayDate, $todayDate]);
 $dosesExpectedToday = 0;
 foreach ($expectedRows as $er) {
     try {
