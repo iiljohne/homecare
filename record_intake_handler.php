@@ -99,7 +99,7 @@ if (!empty($delete) && $delete === 'yes') {
   if (!dbi_execute($insertSql, $params)) {
       echo "Error recording intake: " . dbi_error();
   } else {
-      $newId = (int) mysqli_insert_id($GLOBALS['c']);
+      $newId = (int) dbi_insert_id();
       $details = [
           'schedule_id' => (int) $schedule_id,
           'patient_id' => (int) $patient_id,

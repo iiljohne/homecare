@@ -56,7 +56,7 @@ $sql = "SELECT p.id AS patient_id, p.name AS patient_name,
             ON ms.patient_id = p.id
            AND ms.is_prn = 'N'
            AND ms.frequency IS NOT NULL
-           AND (ms.end_date IS NULL OR ms.end_date >= CURDATE())
+           AND (ms.end_date IS NULL OR ms.end_date >= CURRENT_DATE)
      LEFT JOIN hc_medicines m ON ms.medicine_id = m.id
          WHERE p.is_active = 1";
 // HC-237: only the user's allowed patients.
@@ -245,11 +245,11 @@ $recentSql = "SELECT p.name AS patient_name, m.name AS medicine_name,
                 JOIN hc_medicine_schedules ms ON mi.schedule_id = ms.id
                 JOIN hc_medicines m ON ms.medicine_id = m.id
                 JOIN hc_patients p ON ms.patient_id = p.id
-               WHERE mi.taken_time >= DATE_SUB(NOW(), INTERVAL 24 HOUR)"
+               WHERE mi.taken_time >= ?"
     . $scopeSql . "
                ORDER BY mi.taken_time DESC
                LIMIT 20";
-$recentRows = dbi_get_cached_rows($recentSql, $scopeParams);
+$recentRows = dbi_get_cached_rows($recentSql, array_merge([date('Y-m-d H:i:s', time() - 86400)], $scopeParams));
 
 // ── 4. As-needed (PRN) schedules with a dose limit (HC-238) ────────
 // Only limited PRN rows are listed: their "X of N in last 24h" status
@@ -262,8 +262,8 @@ $prnSql = "SELECT p.id, p.name, ms.id, m.name, m.dosage
             WHERE p.is_active = 1
               AND ms.is_prn = 'Y'
               AND (ms.max_doses_per_24h IS NOT NULL OR ms.min_hours_between IS NOT NULL)
-              AND ms.start_date <= CURDATE()
-              AND (ms.end_date IS NULL OR ms.end_date >= CURDATE())
+              AND ms.start_date <= CURRENT_DATE
+              AND (ms.end_date IS NULL OR ms.end_date >= CURRENT_DATE)
             ORDER BY p.name, m.name";
 $prnItems = [];
 $nowStr = date('Y-m-d H:i:s');

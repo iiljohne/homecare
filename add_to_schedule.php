@@ -34,7 +34,7 @@ $schedule_id = getIntValue('schedule_id');
 
 // Fetch patients
 [$scopeSql, $scopeParams] = patient_scope_sql('id');
-$patientsSql = "SELECT id, name FROM hc_patients WHERE is_active = TRUE" . $scopeSql . " ORDER BY name ASC";
+$patientsSql = "SELECT id, name FROM hc_patients WHERE is_active = 1" . $scopeSql . " ORDER BY name ASC";
 $patientsResult = dbi_execute($patientsSql, $scopeParams);
 
 // Fetch medications
