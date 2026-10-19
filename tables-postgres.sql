@@ -168,6 +168,8 @@ CREATE TABLE hc_medicine_schedules (
   frequency VARCHAR(255) NULL,
   unit_per_dose DECIMAL(10,2) NOT NULL DEFAULT 1.00,
   is_prn CHAR(1) NOT NULL DEFAULT 'N',
+  max_doses_per_24h INTEGER NULL,
+  min_hours_between DECIMAL(5,2) NULL,
   dose_basis VARCHAR(10) NOT NULL DEFAULT 'fixed',
   cycle_on_days INTEGER NULL,
   cycle_off_days INTEGER NULL,
@@ -285,6 +287,37 @@ CREATE TABLE hc_api_rate_limit (
   PRIMARY KEY (ip, bucket, window_start)
 );
 
+/* Reverse-proxy auto-provisioning defaults (HC-243, migration 036). */
+INSERT INTO hc_config (setting, value) VALUES
+  ('reverse_proxy_auto_provision', 'N'),
+  ('reverse_proxy_groups_header', 'Remote-Groups'),
+  ('reverse_proxy_admin_groups', ''),
+  ('reverse_proxy_caregiver_groups', ''),
+  ('reverse_proxy_viewer_groups', ''),
+  ('reverse_proxy_default_role', 'viewer'),
+  ('reverse_proxy_sync_role', 'N'),
+  ('reverse_proxy_name_header', ''),
+  ('reverse_proxy_email_header', '')
+ON CONFLICT (setting) DO NOTHING;
+
+/* Per-patient access allow-list (HC-237, migration 037). */
+CREATE TABLE hc_user_patients (
+  user_login VARCHAR(25) NOT NULL,
+  patient_id INTEGER NOT NULL,
+  created_at TIMESTAMP(0) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (user_login, patient_id),
+  FOREIGN KEY (patient_id) REFERENCES hc_patients (id) ON DELETE CASCADE
+);
+CREATE INDEX idx_hc_user_patients_patient ON hc_user_patients (patient_id);
+
+/* PRN daily-limit alert throttle (HC-238, migration 038). */
+CREATE TABLE hc_prn_limit_alert_log (
+  schedule_id  INTEGER NOT NULL PRIMARY KEY,
+  last_dose_at TIMESTAMP(0) NOT NULL,
+  last_level   VARCHAR(10) NOT NULL,
+  sent_at      TIMESTAMP(0) NOT NULL
+);
+
 /* Migration tracking, same shape as bin/migrate.php creates on MySQL.
    PostgreSQL migrations live in migrations/pgsql/. When one is added,
    fold its change into this file too and list its name below so a
@@ -293,4 +326,7 @@ CREATE TABLE hc_migrations (
   name VARCHAR(64) PRIMARY KEY,
   applied_at TIMESTAMP(0) DEFAULT CURRENT_TIMESTAMP
 );
--- INSERT INTO hc_migrations (name) VALUES ('036_example.sql');
+INSERT INTO hc_migrations (name) VALUES
+  ('036_reverse_proxy_auto_provision.sql'),
+  ('037_add_user_patients.sql'),
+  ('038_add_prn_daily_limit.sql');
