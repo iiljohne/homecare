@@ -127,17 +127,28 @@ faster.
 
 ## Docker
 
-The bundled image and Compose stack are MySQL-only for now. Running
-the image against PostgreSQL would need:
+The image includes `pgsql` + `pdo_pgsql`. Set these environment variables
+on the web container:
 
-- `Dockerfile`: `libpq-dev` + `docker-php-ext-install pgsql pdo_pgsql`,
-  and `postgresql-client` if the entrypoint should probe the server.
-- `docker/docker-entrypoint.sh`: `HC_DB_TYPE=postgresql` already reaches
-  `settings.php`, and `HC_DB_PORT` would have to be written as
-  `db_host: host:port`. The wait loop and first-boot schema load call the
-  `mysql` client; for PostgreSQL they could use `pg_isready` and
-  `php bin/migrate.php` (which bootstraps an empty database) instead.
-- A `postgres:17` service in a Compose override file.
+```
+HC_DB_TYPE=postgresql
+HC_DB_HOST=postgres        # service name
+HC_DB_PORT=5432
+HC_DB_NAME=homecare
+HC_DB_USER=homecare
+HC_DB_PASSWORD=...
+```
+
+On start the entrypoint writes `db_host: host:port` into `settings.php`,
+waits until the app user can connect (via PHP's `pdo_pgsql`, so no client
+package is needed), then runs `php bin/migrate.php`. On an empty database
+that loads `tables-postgres.sql`; afterwards it applies any pending
+`migrations/pgsql/*.sql`. Running it on every start is safe, so upgrades
+pick up new migrations automatically. No admin user is seeded on
+PostgreSQL. Create one, or use reverse-proxy mode.
+
+The bundled Compose stack still uses MySQL; a `postgres:17` service in a
+Compose override would be the PostgreSQL equivalent.
 
 ## Known limitations
 
