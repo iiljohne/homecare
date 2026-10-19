@@ -57,6 +57,13 @@ $sql = "SELECT p.id AS patient_id, p.name AS patient_name,
            AND ms.is_prn = 'N'
            AND ms.frequency IS NOT NULL
            AND (ms.end_date IS NULL OR ms.end_date >= CURRENT_DATE)
+           -- Paused schedules aren't due (same rule as LateDoseAlertService).
+           AND NOT EXISTS (
+               SELECT 1 FROM hc_schedule_pauses sp
+                WHERE sp.schedule_id = ms.id
+                  AND sp.start_date <= ?
+                  AND (sp.end_date IS NULL OR sp.end_date >= ?)
+           )
      LEFT JOIN hc_medicines m ON ms.medicine_id = m.id
          WHERE p.is_active = 1";
 // HC-237: only the user's allowed patients.
@@ -64,7 +71,8 @@ $sql = "SELECT p.id AS patient_id, p.name AS patient_name,
 $sql .= $scopeSql . "
          ORDER BY p.name, ms.id";
 
-$rows = dbi_get_cached_rows($sql, $scopeParams);
+$pauseDay = date('Y-m-d');
+$rows = dbi_get_cached_rows($sql, array_merge([$pauseDay, $pauseDay], $scopeParams));
 
 $patientStats = [];
 foreach ($patients as $p) {
