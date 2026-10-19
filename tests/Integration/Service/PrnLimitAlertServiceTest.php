@@ -33,12 +33,15 @@ final class PrnLimitAlertServiceTest extends DatabaseTestCase
         );
     }
 
+    /** Distinct dosage per seeded medicine: (name, dosage) is unique (migration 035). */
+    private int $medicineSeq = 0;
+
     private function seedPrn(?int $max, ?string $endDate = null, string $isPrn = 'Y'): int
     {
         $db = $this->getDb();
         $db->execute('INSERT INTO hc_patients (name) VALUES (?)', ['Daisy']);
         $patientId = $db->lastInsertId();
-        $db->execute('INSERT INTO hc_medicines (name, dosage) VALUES (?, ?)', ['Gabapentin', '100mg']);
+        $db->execute('INSERT INTO hc_medicines (name, dosage) VALUES (?, ?)', ['Gabapentin', (100 + $this->medicineSeq++) . 'mg']);
         $medicineId = $db->lastInsertId();
         $db->execute(
             'INSERT INTO hc_medicine_schedules
