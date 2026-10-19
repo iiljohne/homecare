@@ -16,7 +16,6 @@ if (!empty(getIntValue('id'))) {
 }
 
 function formatDate($datetime) {
-  date_default_timezone_set('America/New_York');
   $timestamp = strtotime($datetime);
   $today = strtotime(date('Y-m-d 00:00:00'));
   $tomorrow = strtotime('+1 day', $today);
